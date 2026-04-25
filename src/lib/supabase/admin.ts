@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "./database.types";
 
 /**
@@ -6,7 +6,7 @@ import type { Database } from "./database.types";
  * USARE SOLO IN ROUTE HANDLER / SERVER ACTION lato server.
  * MAI esporre al client.
  */
-export function createAdminClient() {
+export function createAdminClient(): SupabaseClient<Database> {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error("SUPABASE_SERVICE_ROLE_KEY non configurata");
   }

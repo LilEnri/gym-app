@@ -1,10 +1,13 @@
 import { GlassCard } from "@/components/ui/glass-card";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { InviteRow } from "@/lib/supabase/database.types";
 import { AcceptInviteForm } from "./accept-form";
 
 interface PageProps {
   searchParams: Promise<{ token?: string }>;
 }
+
+type InviteCheck = Pick<InviteRow, "email" | "role">;
 
 export default async function AcceptInvitePage({ searchParams }: PageProps) {
   const { token } = await searchParams;
@@ -19,27 +22,25 @@ export default async function AcceptInvitePage({ searchParams }: PageProps) {
   }
 
   const admin = createAdminClient();
-  const { data: invite } = await admin
+  const nowIso = new Date().toISOString();
+
+  // Filtri direttamente nella query: non serve check successivo su status/expires
+  const { data } = await admin
     .from("invites")
-    .select("email, role, status, expires_at")
+    .select("email, role")
     .eq("token", token)
+    .eq("status", "pending")
+    .gt("expires_at", nowIso)
     .maybeSingle();
+
+  const invite = data as InviteCheck | null;
 
   if (!invite) {
     return (
       <GlassCard variant="strong" className="p-7 text-center">
-        <h1 className="text-xl font-semibold">Invito non trovato</h1>
-        <p className="mt-2 text-sm text-white/60">Verifica il link ricevuto via email.</p>
-      </GlassCard>
-    );
-  }
-
-  if (invite.status !== "pending" || new Date(invite.expires_at) < new Date()) {
-    return (
-      <GlassCard variant="strong" className="p-7 text-center">
-        <h1 className="text-xl font-semibold">Invito non più valido</h1>
+        <h1 className="text-xl font-semibold">Invito non valido</h1>
         <p className="mt-2 text-sm text-white/60">
-          L&apos;invito è già stato accettato, revocato o è scaduto. Chiedi al coach di rigenerarlo.
+          Il link non è valido, è già stato usato o è scaduto. Chiedi al coach di rigenerarlo.
         </p>
       </GlassCard>
     );
