@@ -23,12 +23,20 @@ export default async function UserHomePage() {
 
   const { data: currentWorkout } = await supabase
     .from("workouts")
-    .select("id, title, description, structure, workout_days(id, label, order_index)")
+    .select("id, title, description, structure")
     .eq("user_id", user.id)
     .eq("is_active", true)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+
+  const { data: workoutDays } = currentWorkout
+    ? await supabase
+        .from("workout_days")
+        .select("id, label, order_index")
+        .eq("workout_id", currentWorkout.id)
+        .order("order_index", { ascending: true })
+    : { data: null };
 
   const { count: sessionsCount } = await supabase
     .from("workout_logs")
@@ -61,19 +69,17 @@ export default async function UserHomePage() {
               Giorni / sessioni
             </p>
             <ul className="space-y-2">
-              {currentWorkout.workout_days
-                .sort((a, b) => a.order_index - b.order_index)
-                .map((day) => (
-                  <li key={day.id}>
-                    <Link
-                      href={`/user/workout/${day.id}`}
-                      className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 hover:border-white/20 hover:bg-white/10 transition-colors"
-                    >
-                      <span className="font-medium">{day.label}</span>
-                      <ChevronRight className="h-4 w-4 text-white/50" />
-                    </Link>
-                  </li>
-                ))}
+              {(workoutDays ?? []).map((day) => (
+                <li key={day.id}>
+                  <Link
+                    href={`/user/workout/${day.id}`}
+                    className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 hover:border-white/20 hover:bg-white/10 transition-colors"
+                  >
+                    <span className="font-medium">{day.label}</span>
+                    <ChevronRight className="h-4 w-4 text-white/50" />
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
         </GlassCard>

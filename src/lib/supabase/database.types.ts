@@ -1,12 +1,12 @@
 // Tipi Supabase — rigenera con:
 //   npx supabase gen types typescript --project-id <id> --schema public > src/lib/supabase/database.types.ts
-// Per ora una definizione manuale, allineata a supabase/migrations/0001_initial.sql.
+// Per ora definizione manuale allineata a supabase/migrations/0001_initial.sql.
+// Shape conforme a @supabase/supabase-js >=2.47 (Relationships obbligatorio).
 
 export type UserRole = "admin" | "coach" | "user";
 export type WorkoutStructure = "weekly" | "rotation" | "single";
 export type InviteStatus = "pending" | "accepted" | "revoked" | "expired";
 
-// Row types
 export interface ProfileRow {
   id: string;
   role: UserRole;
@@ -108,18 +108,23 @@ export interface ActivityLogRow {
   created_at: string;
 }
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       profiles: {
         Row: ProfileRow;
         Insert: Partial<ProfileRow> & { id: string };
         Update: Partial<ProfileRow>;
+        Relationships: [];
       };
       exercises: {
         Row: ExerciseRow;
-        Insert: Omit<ExerciseRow, "id" | "created_at"> & { id?: string; created_at?: string };
+        Insert: Omit<ExerciseRow, "id" | "created_at"> & {
+          id?: string;
+          created_at?: string;
+        };
         Update: Partial<ExerciseRow>;
+        Relationships: [];
       };
       workouts: {
         Row: WorkoutRow;
@@ -129,16 +134,19 @@ export interface Database {
           updated_at?: string;
         };
         Update: Partial<WorkoutRow>;
+        Relationships: [];
       };
       workout_days: {
         Row: WorkoutDayRow;
         Insert: Omit<WorkoutDayRow, "id"> & { id?: string };
         Update: Partial<WorkoutDayRow>;
+        Relationships: [];
       };
       workout_exercises: {
         Row: WorkoutExerciseRow;
         Insert: Omit<WorkoutExerciseRow, "id"> & { id?: string };
         Update: Partial<WorkoutExerciseRow>;
+        Relationships: [];
       };
       workout_logs: {
         Row: WorkoutLogRow;
@@ -147,11 +155,13 @@ export interface Database {
           performed_at?: string;
         };
         Update: Partial<WorkoutLogRow>;
+        Relationships: [];
       };
       exercise_logs: {
         Row: ExerciseLogRow;
         Insert: Omit<ExerciseLogRow, "id"> & { id?: string };
         Update: Partial<ExerciseLogRow>;
+        Relationships: [];
       };
       invites: {
         Row: InviteRow;
@@ -162,6 +172,7 @@ export interface Database {
           status?: InviteStatus;
         };
         Update: Partial<InviteRow>;
+        Relationships: [];
       };
       activity_logs: {
         Row: ActivityLogRow;
@@ -170,16 +181,25 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<ActivityLogRow>;
+        Relationships: [];
       };
     };
-    Views: Record<string, never>;
+    Views: {
+      [_ in never]: never;
+    };
     Functions: {
-      current_user_role: { Args: Record<string, never>; Returns: UserRole };
+      current_user_role: {
+        Args: Record<PropertyKey, never>;
+        Returns: UserRole;
+      };
     };
     Enums: {
       user_role: UserRole;
       workout_structure: WorkoutStructure;
       invite_status: InviteStatus;
     };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
   };
-}
+};
