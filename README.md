@@ -1,98 +1,82 @@
 # Gym App
 
-Web app per la gestione di una palestra — tre ruoli (admin, coach, allievo), schede personalizzate, storico e statistiche.
+Web app per la gestione di una palestra — tre ruoli (admin, coach, allievo), schede personalizzate, storico, statistiche.
 
-**Stack**: Next.js 15 (App Router) · TypeScript · Tailwind CSS v4 · Supabase (Auth + Postgres + RLS) · Vercel.
+**Stack**: Next.js 15 · TypeScript · Tailwind CSS v4 · Supabase (Auth + Postgres + RLS) · Vercel.
 
-## Setup rapido
+> Architettura, pattern, sicurezza → [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-### 1. Installa Node.js
+## Setup
 
-Node 20+ richiesto. [Scarica qui](https://nodejs.org/) se non lo hai.
+### 1. Node.js 20+
 
-### 2. Installa le dipendenze
+[Scarica](https://nodejs.org/) e installa.
+
+### 2. Dipendenze
 
 ```bash
 npm install
 ```
 
-### 3. Configura Supabase
+### 3. Supabase
 
 1. Crea un progetto su [supabase.com](https://supabase.com).
-2. Apri **SQL Editor** → incolla il contenuto di `supabase/migrations/0001_initial.sql` → esegui.
-3. Copia URL e anon key (Project Settings → API) in `.env.local`:
+2. **SQL Editor** → incolla il contenuto di `supabase/migrations/0001_initial.sql` → Run.
+3. Copia URL, anon key e service role key (Project Settings → API) in `.env.local`:
 
 ```bash
 cp .env.example .env.local
-# poi compila NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY
 ```
 
-### 4. Avvia in locale
+### 4. Crea il primo admin
+
+Dato che l'app è **invite-only**, il primo admin si crea a mano:
+
+1. In Supabase: **Auth → Users → Invite user** con la tua email.
+2. Apri il link ricevuto via email, scegli una password.
+3. **SQL Editor**:
+   ```sql
+   update public.profiles set role = 'admin' where id = '<tuo-user-id>';
+   ```
+   (trovi l'`id` in `Auth → Users` o in `Table Editor → profiles`)
+
+### 5. Avvia in locale
 
 ```bash
 npm run dev
 ```
 
-Apri [http://localhost:3000](http://localhost:3000).
+Apri [http://localhost:3000](http://localhost:3000) e accedi.
 
-## Come promuovere un utente a coach/admin
+## Flusso invito
 
-Ogni registrazione crea di default un profilo con ruolo `user`. Per promuoverlo:
+1. Admin/coach inserisce un nuovo invito nella tabella `invites` (email + ruolo + token random + `invited_by`).
+2. L'admin/coach manda all'utente il link `https://app.example.com/accept-invite?token=<token>`.
+3. L'utente apre il link, vede l'email pre-compilata, sceglie nome + password.
+4. Al `auth.signUp()`, il trigger `handle_new_user()` cerca un invito pending per quella email, assegna il ruolo dell'invito e lo marca come `accepted`.
 
-```sql
--- In Supabase SQL Editor
-update public.profiles set role = 'coach' where id = '<user-id>';
--- oppure 'admin'
-```
+> In una iterazione successiva costruiamo l'UI per generare inviti + manderemo l'email tramite Resend / Supabase Auth Admin API.
 
-Poi collega un allievo a un coach:
+## Ruoli e route
 
-```sql
-insert into public.coach_athletes (coach_id, athlete_id)
-values ('<coach-user-id>', '<athlete-user-id>');
-```
+| Ruolo  | Path     | Cosa vede |
+|--------|----------|-----------|
+| user   | `/user`  | Scheda attiva, storico, statistiche, profilo |
+| coach  | `/coach` | Allievi, schede, esercizi |
+| admin  | `/admin` | Utenti, log, impostazioni |
 
-## Struttura
-
-```
-src/
-  app/
-    (auth)/          # login, register
-    (app)/           # area autenticata, sidebar + bottom nav
-      dashboard/     # home utente
-      coach/         # area coach
-      admin/         # area admin
-    auth/signout/    # route POST per logout
-    locked/          # schermata utente bloccato
-  components/
-    ui/              # Button, Input, GlassCard
-    app-shell.tsx    # layout sidebar + bottom nav
-  lib/
-    supabase/        # client browser, server, middleware, types
-    utils.ts
-  middleware.ts      # session refresh + role guard
-supabase/migrations/ # schema SQL
-```
+Il `middleware.ts` intercetta tutte le request, rinfresca la sessione e blocca route non autorizzate. Le RLS policy sul DB garantiscono che il client non possa leggere/scrivere fuori dai propri permessi anche se il middleware viene aggirato.
 
 ## Deploy su Vercel
 
-1. Pusha il repo su GitHub.
-2. Su Vercel → "New Project" → seleziona il repo.
-3. Aggiungi le env var da `.env.example` nelle Project Settings.
+1. Push su GitHub.
+2. [vercel.com/new](https://vercel.com/new) → seleziona il repo.
+3. Aggiungi le env var in **Project Settings → Environment Variables** (le stesse di `.env.example`).
 4. Deploy.
 
 ## Design
 
-- **Liquid glass**: `backdrop-filter` + gradienti su trasparenze bianche. Utility `.glass`, `.glass-strong`, `.glass-brand` in `globals.css`.
-- **Palette**: rosso (`--color-brand-*`) su sfondo scuro quasi nero con orbs sfocati animati.
-- **Mobile-first**: bottom nav + topbar su mobile, sidebar su desktop (≥1024px).
-
-## Ruoli
-
-| Ruolo  | Path            | Capacità |
-|--------|-----------------|----------|
-| user   | `/dashboard`    | Visualizza scheda attuale, storico, statistiche |
-| coach  | `/coach`        | Gestisce allievi, crea schede, libreria esercizi |
-| admin  | `/admin`        | Gestione utenti, log, blocco account |
-
-Il `middleware.ts` protegge le route in base al ruolo. Le RLS policy sul DB garantiscono che il client non possa leggere/scrivere dati fuori dai suoi permessi.
+- **Liquid glass**: `backdrop-filter: blur()` su gradienti trasparenti. Utility `.glass`, `.glass-strong`, `.glass-brand` in `src/app/globals.css`.
+- **Palette**: rosso `--color-brand-*` su sfondo quasi nero, con orbs sfumati animati.
+- **Mobile-first**: bottom nav su mobile, sidebar su desktop (≥1024px). Safe-area iOS.
+- **Font**: Inter per il testo, Bricolage Grotesque per i display headings.

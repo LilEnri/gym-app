@@ -2,6 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "./database.types";
 
+const PUBLIC_PREFIXES = ["/login", "/accept-invite", "/auth/callback"];
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -31,43 +33,46 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  const isAuthRoute = pathname.startsWith("/login") || pathname.startsWith("/register");
-  const isPublicRoute = pathname === "/" || isAuthRoute;
+  const isPublic = PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
 
-  // Non autenticato → redirect a login
-  if (!user && !isPublicRoute) {
+  // Non autenticato → solo le route public e la root sono accessibili
+  if (!user && !isPublic && pathname !== "/") {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  // Autenticato che visita /login o /register → redirect a dashboard
-  if (user && isAuthRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
-  }
-
-  // Route-guard sui ruoli
-  if (user) {
+  // Autenticato che visita /login → redirect alla home del proprio ruolo
+  if (user && pathname === "/login") {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role, locked")
+      .select("role")
       .eq("id", user.id)
       .single();
 
-    if (profile?.locked && !pathname.startsWith("/locked")) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/locked";
-      return NextResponse.redirect(url);
-    }
+    const url = request.nextUrl.clone();
+    url.pathname = `/${profile?.role ?? "user"}`;
+    return NextResponse.redirect(url);
+  }
 
-    if (profile && !profile.locked) {
-      if (pathname.startsWith("/admin") && profile.role !== "admin") {
-        return NextResponse.redirect(new URL("/dashboard", request.url));
+  // Route guard per ruoli
+  if (user) {
+    if (pathname.startsWith("/admin") || pathname.startsWith("/coach")) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      if (pathname.startsWith("/admin") && profile?.role !== "admin") {
+        return NextResponse.redirect(new URL(`/${profile?.role ?? "user"}`, request.url));
       }
-      if (pathname.startsWith("/coach") && profile.role !== "coach" && profile.role !== "admin") {
-        return NextResponse.redirect(new URL("/dashboard", request.url));
+      if (
+        pathname.startsWith("/coach") &&
+        profile?.role !== "coach" &&
+        profile?.role !== "admin"
+      ) {
+        return NextResponse.redirect(new URL(`/${profile?.role ?? "user"}`, request.url));
       }
     }
   }

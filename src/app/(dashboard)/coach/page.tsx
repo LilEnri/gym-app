@@ -16,36 +16,39 @@ export default async function CoachHomePage() {
     .select("role, full_name")
     .eq("id", user.id)
     .single();
-  if (profile?.role !== "coach" && profile?.role !== "admin") redirect("/dashboard");
+  if (profile?.role !== "coach" && profile?.role !== "admin") redirect("/user");
 
-  const { count: athletesCount } = await supabase
-    .from("coach_athletes")
+  // Allievi: profili con ruolo 'user' su cui il coach ha almeno una scheda attiva
+  const { data: athletes } = await supabase
+    .from("workouts")
+    .select("user_id")
+    .eq("coach_id", user.id)
+    .eq("is_active", true);
+
+  const athletesCount = new Set((athletes ?? []).map((w) => w.user_id)).size;
+
+  const { count: activeWorkoutsCount } = await supabase
+    .from("workouts")
     .select("*", { count: "exact", head: true })
     .eq("coach_id", user.id)
-    .eq("active", true);
-
-  const { count: activePlansCount } = await supabase
-    .from("workout_plans")
-    .select("*", { count: "exact", head: true })
-    .eq("coach_id", user.id)
-    .eq("active", true);
+    .eq("is_active", true);
 
   return (
     <div className="space-y-6">
       <div>
         <p className="text-sm text-white/60">Area coach</p>
-        <h1 className="text-3xl font-semibold tracking-tight">
+        <h1 className="font-display text-3xl font-semibold tracking-tight">
           Ciao, {profile?.full_name?.split(" ")[0] ?? "Coach"}
         </h1>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Link href="/coach/athletes" className="group">
-          <GlassCard className="transition-all group-hover:bg-white/10">
+          <GlassCard className="transition-colors group-hover:bg-white/10">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-white/60">Allievi attivi</p>
-                <p className="mt-1 text-2xl font-semibold">{athletesCount ?? 0}</p>
+                <p className="mt-1 font-display text-2xl font-semibold">{athletesCount}</p>
               </div>
               <Users className="h-6 w-6 text-brand-400" />
             </div>
@@ -55,12 +58,12 @@ export default async function CoachHomePage() {
           </GlassCard>
         </Link>
 
-        <Link href="/coach/plans" className="group">
-          <GlassCard className="transition-all group-hover:bg-white/10">
+        <Link href="/coach/workouts" className="group">
+          <GlassCard className="transition-colors group-hover:bg-white/10">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-white/60">Schede attive</p>
-                <p className="mt-1 text-2xl font-semibold">{activePlansCount ?? 0}</p>
+                <p className="mt-1 font-display text-2xl font-semibold">{activeWorkoutsCount ?? 0}</p>
               </div>
               <Dumbbell className="h-6 w-6 text-brand-400" />
             </div>
@@ -72,11 +75,11 @@ export default async function CoachHomePage() {
       </div>
 
       <GlassCard>
-        <h2 className="font-semibold">Prossimi passi</h2>
+        <h2 className="font-display font-semibold">Prossimi passi</h2>
         <ul className="mt-3 space-y-2 text-sm text-white/70">
-          <li>• Aggiungi un allievo da <Link href="/coach/athletes" className="text-brand-400">Allievi</Link>.</li>
-          <li>• Crea una scheda da <Link href="/coach/plans" className="text-brand-400">Schede</Link>.</li>
-          <li>• Amplia la <Link href="/coach/library" className="text-brand-400">libreria esercizi</Link>.</li>
+          <li>• Invita un allievo da <Link href="/coach/athletes" className="text-brand-400">Allievi</Link>.</li>
+          <li>• Crea una scheda da <Link href="/coach/workouts" className="text-brand-400">Schede</Link>.</li>
+          <li>• Amplia la <Link href="/coach/exercises" className="text-brand-400">libreria esercizi</Link>.</li>
         </ul>
       </GlassCard>
     </div>

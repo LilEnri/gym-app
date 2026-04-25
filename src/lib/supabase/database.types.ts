@@ -1,148 +1,185 @@
 // Tipi Supabase — rigenera con:
 //   npx supabase gen types typescript --project-id <id> --schema public > src/lib/supabase/database.types.ts
-// Per ora una definizione minima manuale per avere autocompletamento.
+// Per ora una definizione manuale, allineata a supabase/migrations/0001_initial.sql.
 
 export type UserRole = "admin" | "coach" | "user";
+export type WorkoutStructure = "weekly" | "rotation" | "single";
+export type InviteStatus = "pending" | "accepted" | "revoked" | "expired";
 
-export type Database = {
+// Row types
+export interface ProfileRow {
+  id: string;
+  role: UserRole;
+  full_name: string | null;
+  avatar_url: string | null;
+  phone: string | null;
+  date_of_birth: string | null;
+  notes: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExerciseRow {
+  id: string;
+  name: string;
+  muscle_group: string;
+  equipment: string | null;
+  description: string | null;
+  video_url: string | null;
+  is_preset: boolean;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface WorkoutRow {
+  id: string;
+  user_id: string;
+  coach_id: string;
+  title: string;
+  description: string | null;
+  structure: WorkoutStructure;
+  start_date: string;
+  end_date: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkoutDayRow {
+  id: string;
+  workout_id: string;
+  label: string;
+  order_index: number;
+  notes: string | null;
+}
+
+export interface WorkoutExerciseRow {
+  id: string;
+  workout_day_id: string;
+  exercise_id: string;
+  order_index: number;
+  sets: number;
+  target_reps: string;
+  target_weight: string | null;
+  rest_seconds: number | null;
+  notes: string | null;
+}
+
+export interface WorkoutLogRow {
+  id: string;
+  user_id: string;
+  workout_day_id: string;
+  performed_at: string;
+  duration_minutes: number | null;
+  overall_notes: string | null;
+}
+
+export interface ExerciseLogRow {
+  id: string;
+  workout_log_id: string;
+  workout_exercise_id: string;
+  set_number: number;
+  weight_kg: number | null;
+  reps_done: number | null;
+  completed: boolean;
+  notes: string | null;
+}
+
+export interface InviteRow {
+  id: string;
+  email: string;
+  role: UserRole;
+  invited_by: string;
+  token: string;
+  status: InviteStatus;
+  expires_at: string;
+  accepted_at: string | null;
+  created_at: string;
+}
+
+export interface ActivityLogRow {
+  id: string;
+  actor_id: string | null;
+  action: string;
+  entity_type: string | null;
+  entity_id: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface Database {
   public: {
     Tables: {
       profiles: {
-        Row: {
-          id: string;
-          role: UserRole;
-          full_name: string | null;
-          avatar_url: string | null;
-          phone: string | null;
-          date_of_birth: string | null;
-          locked: boolean;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["profiles"]["Row"]> & { id: string };
-        Update: Partial<Database["public"]["Tables"]["profiles"]["Row"]>;
-      };
-      coach_athletes: {
-        Row: {
-          id: string;
-          coach_id: string;
-          athlete_id: string;
-          active: boolean;
-          assigned_at: string;
-        };
-        Insert: Omit<Database["public"]["Tables"]["coach_athletes"]["Row"], "id" | "assigned_at"> & {
-          id?: string;
-          assigned_at?: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["coach_athletes"]["Row"]>;
+        Row: ProfileRow;
+        Insert: Partial<ProfileRow> & { id: string };
+        Update: Partial<ProfileRow>;
       };
       exercises: {
-        Row: {
-          id: string;
-          name: string;
-          muscle_group: string;
-          equipment: string | null;
-          description: string | null;
-          video_url: string | null;
-          created_by: string | null;
-          is_public: boolean;
-          created_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["exercises"]["Row"]> & {
-          name: string;
-          muscle_group: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["exercises"]["Row"]>;
+        Row: ExerciseRow;
+        Insert: Omit<ExerciseRow, "id" | "created_at"> & { id?: string; created_at?: string };
+        Update: Partial<ExerciseRow>;
       };
-      workout_plans: {
-        Row: {
-          id: string;
-          coach_id: string;
-          athlete_id: string;
-          title: string;
-          notes: string | null;
-          start_date: string | null;
-          end_date: string | null;
-          active: boolean;
-          created_at: string;
-          updated_at: string;
+      workouts: {
+        Row: WorkoutRow;
+        Insert: Omit<WorkoutRow, "id" | "created_at" | "updated_at"> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
         };
-        Insert: Partial<Database["public"]["Tables"]["workout_plans"]["Row"]> & {
-          coach_id: string;
-          athlete_id: string;
-          title: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["workout_plans"]["Row"]>;
+        Update: Partial<WorkoutRow>;
       };
-      plan_days: {
-        Row: {
-          id: string;
-          plan_id: string;
-          day_number: number;
-          name: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["plan_days"]["Row"]> & {
-          plan_id: string;
-          day_number: number;
-          name: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["plan_days"]["Row"]>;
+      workout_days: {
+        Row: WorkoutDayRow;
+        Insert: Omit<WorkoutDayRow, "id"> & { id?: string };
+        Update: Partial<WorkoutDayRow>;
       };
-      plan_exercises: {
-        Row: {
-          id: string;
-          plan_day_id: string;
-          exercise_id: string;
-          order_index: number;
-          sets: number;
-          reps: string;
-          rest_seconds: number | null;
-          weight_kg: number | null;
-          notes: string | null;
-        };
-        Insert: Partial<Database["public"]["Tables"]["plan_exercises"]["Row"]> & {
-          plan_day_id: string;
-          exercise_id: string;
-          sets: number;
-          reps: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["plan_exercises"]["Row"]>;
+      workout_exercises: {
+        Row: WorkoutExerciseRow;
+        Insert: Omit<WorkoutExerciseRow, "id"> & { id?: string };
+        Update: Partial<WorkoutExerciseRow>;
       };
       workout_logs: {
-        Row: {
-          id: string;
-          athlete_id: string;
-          plan_exercise_id: string | null;
-          exercise_id: string;
-          performed_at: string;
-          sets_completed: number;
-          reps_completed: string | null;
-          weight_kg: number | null;
-          notes: string | null;
+        Row: WorkoutLogRow;
+        Insert: Omit<WorkoutLogRow, "id" | "performed_at"> & {
+          id?: string;
+          performed_at?: string;
         };
-        Insert: Partial<Database["public"]["Tables"]["workout_logs"]["Row"]> & {
-          athlete_id: string;
-          exercise_id: string;
-          sets_completed: number;
-        };
-        Update: Partial<Database["public"]["Tables"]["workout_logs"]["Row"]>;
+        Update: Partial<WorkoutLogRow>;
       };
-      audit_logs: {
-        Row: {
-          id: string;
-          actor_id: string | null;
-          action: string;
-          target_type: string | null;
-          target_id: string | null;
-          metadata: Record<string, unknown> | null;
-          created_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["audit_logs"]["Row"]> & { action: string };
-        Update: Partial<Database["public"]["Tables"]["audit_logs"]["Row"]>;
+      exercise_logs: {
+        Row: ExerciseLogRow;
+        Insert: Omit<ExerciseLogRow, "id"> & { id?: string };
+        Update: Partial<ExerciseLogRow>;
       };
+      invites: {
+        Row: InviteRow;
+        Insert: Omit<InviteRow, "id" | "created_at" | "expires_at" | "status"> & {
+          id?: string;
+          created_at?: string;
+          expires_at?: string;
+          status?: InviteStatus;
+        };
+        Update: Partial<InviteRow>;
+      };
+      activity_logs: {
+        Row: ActivityLogRow;
+        Insert: Omit<ActivityLogRow, "id" | "created_at"> & {
+          id?: string;
+          created_at?: string;
+        };
+        Update: Partial<ActivityLogRow>;
+      };
+    };
+    Views: Record<string, never>;
+    Functions: {
+      current_user_role: { Args: Record<string, never>; Returns: UserRole };
     };
     Enums: {
       user_role: UserRole;
+      workout_structure: WorkoutStructure;
+      invite_status: InviteStatus;
     };
   };
-};
+}

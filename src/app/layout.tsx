@@ -1,17 +1,29 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Bricolage_Grotesque, Inter } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
+const fontSans = Inter({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-inter",
+  variable: "--font-sans",
+});
+
+const fontDisplay = Bricolage_Grotesque({
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["500", "600", "700", "800"],
+  variable: "--font-display",
 });
 
 export const metadata: Metadata = {
   title: "Gym App",
-  description: "Piattaforma di gestione palestra: schede, allievi e statistiche.",
-  manifest: "/manifest.webmanifest",
+  description: "La tua palestra, in tasca.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Gym App",
+  },
 };
 
 export const viewport: Viewport = {
@@ -26,7 +38,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="it" className={inter.variable}>
+    <html lang="it" className={`${fontSans.variable} ${fontDisplay.variable}`}>
       <body>{children}</body>
     </html>
   );

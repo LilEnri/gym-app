@@ -7,45 +7,46 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 
-export function RegisterForm() {
+export function AcceptInviteForm({ email }: { email: string }) {
   const router = useRouter();
   const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    setNotice(null);
 
     const supabase = createClient();
-    const { error, data } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { full_name: fullName } },
     });
 
-    setLoading(false);
-
     if (error) {
       setError(error.message);
+      setLoading(false);
       return;
     }
 
     if (data.session) {
-      router.push("/dashboard");
+      router.push("/");
       router.refresh();
     } else {
-      setNotice("Controlla la tua email per confermare l'account.");
+      router.push("/login");
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Label>Email</Label>
+        <Input value={email} disabled readOnly className="opacity-70" />
+      </div>
+
       <div>
         <Label htmlFor="fullName">Nome completo</Label>
         <Input
@@ -54,19 +55,6 @@ export function RegisterForm() {
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           placeholder="Mario Rossi"
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="tuo@email.it"
         />
       </div>
 
@@ -87,11 +75,6 @@ export function RegisterForm() {
       {error && (
         <p className="text-sm text-red-400 bg-red-950/40 border border-red-900/40 rounded-lg px-3 py-2">
           {error}
-        </p>
-      )}
-      {notice && (
-        <p className="text-sm text-emerald-300 bg-emerald-950/40 border border-emerald-900/40 rounded-lg px-3 py-2">
-          {notice}
         </p>
       )}
 

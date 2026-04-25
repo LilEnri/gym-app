@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Dumbbell, Home, LineChart, LogOut, Shield, Users, Calendar, Library } from "lucide-react";
+import { Dumbbell, Home, LineChart, LogOut, Settings, Shield, Users, Calendar, UserCog } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/lib/supabase/database.types";
 
@@ -10,21 +10,22 @@ type NavItem = { href: string; label: string; icon: React.ComponentType<{ classN
 
 const navByRole: Record<UserRole, NavItem[]> = {
   user: [
-    { href: "/dashboard", label: "Home", icon: Home },
-    { href: "/dashboard/workouts", label: "Schede", icon: Dumbbell },
-    { href: "/dashboard/history", label: "Storico", icon: Calendar },
-    { href: "/dashboard/stats", label: "Statistiche", icon: LineChart },
+    { href: "/user", label: "Home", icon: Home },
+    { href: "/user/history", label: "Storico", icon: Calendar },
+    { href: "/user/stats", label: "Statistiche", icon: LineChart },
+    { href: "/user/profile", label: "Profilo", icon: UserCog },
   ],
   coach: [
     { href: "/coach", label: "Home", icon: Home },
     { href: "/coach/athletes", label: "Allievi", icon: Users },
-    { href: "/coach/plans", label: "Schede", icon: Dumbbell },
-    { href: "/coach/library", label: "Esercizi", icon: Library },
+    { href: "/coach/workouts", label: "Schede", icon: Dumbbell },
+    { href: "/coach/exercises", label: "Esercizi", icon: Dumbbell },
   ],
   admin: [
     { href: "/admin", label: "Home", icon: Home },
     { href: "/admin/users", label: "Utenti", icon: Users },
     { href: "/admin/logs", label: "Log", icon: Shield },
+    { href: "/admin/settings", label: "Impostazioni", icon: Settings },
   ],
 };
 

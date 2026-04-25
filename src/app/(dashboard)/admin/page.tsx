@@ -16,12 +16,12 @@ export default async function AdminHomePage() {
     .select("role")
     .eq("id", user.id)
     .single();
-  if (profile?.role !== "admin") redirect("/dashboard");
+  if (profile?.role !== "admin") redirect("/user");
 
-  const [{ count: usersCount }, { count: coachCount }, { count: lockedCount }] = await Promise.all([
+  const [{ count: usersCount }, { count: coachCount }, { count: suspendedCount }] = await Promise.all([
     supabase.from("profiles").select("*", { count: "exact", head: true }),
     supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "coach"),
-    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("locked", true),
+    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("is_active", false),
   ]);
 
   return (
@@ -53,8 +53,8 @@ export default async function AdminHomePage() {
         <GlassCard>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-white/60">Bloccati</p>
-              <p className="mt-1 text-2xl font-semibold">{lockedCount ?? 0}</p>
+              <p className="text-sm text-white/60">Sospesi</p>
+              <p className="mt-1 text-2xl font-semibold">{suspendedCount ?? 0}</p>
             </div>
             <Lock className="h-6 w-6 text-brand-400" />
           </div>
