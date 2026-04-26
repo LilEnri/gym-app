@@ -66,24 +66,23 @@ export async function createInviteAction(formData: FormData): Promise<ActionResu
   return { ok: true, data: { token } };
 }
 
-export async function revokeInviteAction(formData: FormData): Promise<ActionResult> {
+// Usata direttamente in <form action={...}>: deve ritornare void.
+// Errori vengono ignorati silenziosamente (azione idempotente).
+export async function revokeInviteAction(formData: FormData): Promise<void> {
   const inviteId = String(formData.get("inviteId") ?? "");
-  if (!inviteId) return { ok: false, error: "Invito mancante." };
+  if (!inviteId) return;
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "Non autenticato." };
+  if (!user) return;
 
-  const { error } = await supabase
+  await supabase
     .from("invites")
     .update({ status: "revoked" })
     .eq("id", inviteId)
     .eq("invited_by", user.id);
 
-  if (error) return { ok: false, error: error.message };
-
   revalidatePath("/coach/athletes");
-  return { ok: true, data: undefined };
 }
