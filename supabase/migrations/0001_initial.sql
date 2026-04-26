@@ -364,6 +364,29 @@ create policy "authenticated insert activity_logs" on public.activity_logs
   for insert with check (auth.uid() = actor_id);
 
 -- =====================================================================
+-- GRANT — permessi base sui ruoli Supabase.
+-- RLS resta la prima difesa; questi grant abilitano solo l'OPERAZIONE
+-- (poi la policy dice se passa o no). Senza, anche con policy giuste
+-- otteniamo "permission denied for table".
+-- =====================================================================
+
+grant usage on schema public to postgres, anon, authenticated, service_role;
+
+grant select on all tables in schema public to anon;
+grant select, insert, update, delete on all tables in schema public to authenticated;
+grant all on all tables in schema public to service_role;
+
+alter default privileges in schema public grant select on tables to anon;
+alter default privileges in schema public grant select, insert, update, delete on tables to authenticated;
+alter default privileges in schema public grant all on tables to service_role;
+
+grant usage, select on all sequences in schema public to anon, authenticated, service_role;
+alter default privileges in schema public grant usage, select on sequences to anon, authenticated, service_role;
+
+grant execute on all functions in schema public to anon, authenticated, service_role;
+alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
+
+-- =====================================================================
 -- SEED: libreria esercizi preimpostati (40)
 -- =====================================================================
 insert into public.exercises (name, muscle_group, equipment, is_preset) values
