@@ -5,11 +5,23 @@ type CookieToSet = { name: string; value: string; options: CookieOptions };
 
 const PUBLIC_PREFIXES = ["/login", "/accept-invite", "/auth/callback"];
 
+/**
+ * Copia tutti i cookie da `source` in `target` e restituisce target.
+ * Indispensabile quando middleware crea una nuova NextResponse (redirect)
+ * dopo che supabase.auth.getUser() ha rinfrescato i token: senza questa
+ * propagazione i cookie aggiornati vanno persi → al prossimo request
+ * la sessione non viene riconosciuta → loop di redirect.
+ */
+function copyCookies(target: NextResponse, source: NextResponse): NextResponse {
+  source.cookies.getAll().forEach((cookie) => {
+    target.cookies.set(cookie);
+  });
+  return target;
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
-  // Se le env var Supabase non sono configurate, lascia passare la request
-  // senza cercare di rinfrescare la sessione (evita crash 500 lato edge).
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) {
@@ -45,7 +57,7 @@ export async function updateSession(request: NextRequest) {
   if (!user && !isPublic && pathname !== "/") {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
-    return NextResponse.redirect(redirectUrl);
+    return copyCookies(NextResponse.redirect(redirectUrl), supabaseResponse);
   }
 
   if (user && pathname === "/login") {
@@ -56,8 +68,9 @@ export async function updateSession(request: NextRequest) {
       .single();
 
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = `/${profile?.role ?? "user"}`;
-    return NextResponse.redirect(redirectUrl);
+    const role = (profile as { role?: string } | null)?.role;
+    redirectUrl.pathname = `/${role ?? "user"}`;
+    return copyCookies(NextResponse.redirect(redirectUrl), supabaseResponse);
   }
 
   if (user && (pathname.startsWith("/admin") || pathname.startsWith("/coach"))) {
@@ -67,15 +80,19 @@ export async function updateSession(request: NextRequest) {
       .eq("id", user.id)
       .single();
 
-    if (pathname.startsWith("/admin") && profile?.role !== "admin") {
-      return NextResponse.redirect(new URL(`/${profile?.role ?? "user"}`, request.url));
+    const role = (profile as { role?: string } | null)?.role;
+
+    if (pathname.startsWith("/admin") && role !== "admin") {
+      return copyCookies(
+        NextResponse.redirect(new URL(`/${role ?? "user"}`, request.url)),
+        supabaseResponse,
+      );
     }
-    if (
-      pathname.startsWith("/coach") &&
-      profile?.role !== "coach" &&
-      profile?.role !== "admin"
-    ) {
-      return NextResponse.redirect(new URL(`/${profile?.role ?? "user"}`, request.url));
+    if (pathname.startsWith("/coach") && role !== "coach" && role !== "admin") {
+      return copyCookies(
+        NextResponse.redirect(new URL(`/${role ?? "user"}`, request.url)),
+        supabaseResponse,
+      );
     }
   }
 
