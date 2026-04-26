@@ -18,14 +18,13 @@ export default async function CoachHomePage() {
     .single();
   if (profile?.role !== "coach" && profile?.role !== "admin") redirect("/user");
 
-  // Allievi: profili con ruolo 'user' su cui il coach ha almeno una scheda attiva
-  const { data: athletes } = await supabase
-    .from("workouts")
-    .select("user_id")
-    .eq("coach_id", user.id)
+  // Allievi: profili che ho invitato e che sono attivi
+  const { count: athletesCount } = await supabase
+    .from("profiles")
+    .select("*", { count: "exact", head: true })
+    .eq("invited_by", user.id)
+    .eq("role", "user")
     .eq("is_active", true);
-
-  const athletesCount = new Set((athletes ?? []).map((w) => w.user_id)).size;
 
   const { count: activeWorkoutsCount } = await supabase
     .from("workouts")
@@ -48,7 +47,7 @@ export default async function CoachHomePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-white/60">Allievi attivi</p>
-                <p className="mt-1 font-display text-2xl font-semibold">{athletesCount}</p>
+                <p className="mt-1 font-display text-2xl font-semibold">{athletesCount ?? 0}</p>
               </div>
               <Users className="h-6 w-6 text-brand-400" />
             </div>
