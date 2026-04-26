@@ -2,9 +2,11 @@ import { forwardRef, type InputHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
-  ({ className, ...props }, ref) => (
+  ({ className, style, ...props }, ref) => (
     <input
       ref={ref}
+      // colorScheme: dark forza date picker / autofill / spinner in tema scuro
+      style={{ colorScheme: "dark", ...style }}
       className={cn(
         "w-full h-11 px-4 rounded-xl",
         "bg-white/5 border border-white/10",

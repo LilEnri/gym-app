@@ -3,10 +3,13 @@ import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(
-  ({ className, children, ...props }, ref) => (
+  ({ className, children, style, ...props }, ref) => (
     <div className="relative">
       <select
         ref={ref}
+        // colorScheme: dark fa renderizzare il dropdown nativo (Chromium/WebKit)
+        // in stile dark, evitando popup bianco illeggibile.
+        style={{ colorScheme: "dark", ...style }}
         className={cn(
           "w-full h-11 pl-4 pr-10 rounded-xl appearance-none",
           "bg-white/5 border border-white/10",
@@ -14,6 +17,10 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
           "focus:outline-none focus:border-brand-500/60 focus:bg-white/[0.07]",
           "transition-colors duration-200",
           "disabled:opacity-50 disabled:cursor-not-allowed",
+          // Stile esplicito alle option (fallback per browser che ignorano colorScheme)
+          "[&>option]:bg-[#140a10] [&>option]:text-white",
+          "[&>optgroup]:bg-[#140a10] [&>optgroup]:text-white/60",
+          "[&>optgroup>option]:bg-[#140a10] [&>optgroup>option]:text-white",
           className,
         )}
         {...props}
