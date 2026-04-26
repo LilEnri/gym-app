@@ -66,7 +66,7 @@ export default async function WorkoutDayPage({ params }: PageProps) {
 
   const day = dayData as unknown as Day;
 
-  const { data: exData } = await supabase
+  const { data: exData, error: exError } = await supabase
     .from("workout_exercises")
     .select(
       "id, workout_day_id, exercise_id, order_index, sets, target_reps, rest_seconds, notes, exercises:exercise_id(id, name, muscle_group, equipment, image_url)",
@@ -104,7 +104,16 @@ export default async function WorkoutDayPage({ params }: PageProps) {
         </GlassCard>
       )}
 
-      {exercises.length === 0 ? (
+      {exError ? (
+        <GlassCard>
+          <p className="text-sm text-red-300">Errore caricamento esercizi.</p>
+          <p className="mt-1 text-xs text-white/50 break-all">{exError.message}</p>
+          <p className="mt-2 text-xs text-white/60">
+            Se vedi &quot;column ... does not exist&quot;, esegui la migration 0003 in Supabase
+            (aggiunge la colonna <code>image_url</code> agli esercizi).
+          </p>
+        </GlassCard>
+      ) : exercises.length === 0 ? (
         <GlassCard className="text-center py-10">
           <p className="text-sm text-white/60">
             Il coach non ha ancora aggiunto esercizi a questo giorno.
