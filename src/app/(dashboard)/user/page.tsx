@@ -4,6 +4,19 @@ import { Calendar, ChevronRight, ClipboardList, TrendingUp } from "lucide-react"
 import { createClient } from "@/lib/supabase/server";
 import { GlassCard } from "@/components/ui/glass-card";
 
+export const dynamic = "force-dynamic";
+
+type WorkoutItem = {
+  id: string;
+  title: string;
+  description: string | null;
+  structure: string;
+  is_active: boolean;
+  start_date: string;
+};
+
+type DayItem = { id: string; workout_id: string; label: string; order_index: number };
+
 export default async function UserHomePage() {
   const supabase = await createClient();
   const {
@@ -17,26 +30,31 @@ export default async function UserHomePage() {
     .eq("id", user.id)
     .single();
 
-  // Coach/admin hanno la propria home
   if (profile?.role === "coach") redirect("/coach");
   if (profile?.role === "admin") redirect("/admin");
 
-  const { data: currentWorkout } = await supabase
+  // Tutte le schede dell'utente, attive prima
+  const { data: allWorkoutsData } = await supabase
     .from("workouts")
-    .select("id, title, description, structure")
+    .select("id, title, description, structure, is_active, start_date")
     .eq("user_id", user.id)
-    .eq("is_active", true)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order("is_active", { ascending: false })
+    .order("created_at", { ascending: false });
 
-  const { data: workoutDays } = currentWorkout
-    ? await supabase
-        .from("workout_days")
-        .select("id, label, order_index")
-        .eq("workout_id", currentWorkout.id)
-        .order("order_index", { ascending: true })
-    : { data: null };
+  const workouts = (allWorkoutsData ?? []) as WorkoutItem[];
+  const activeWorkout = workouts.find((w) => w.is_active);
+  const otherWorkouts = workouts.filter((w) => w.id !== activeWorkout?.id);
+
+  // Giorni della scheda attiva
+  let activeDays: DayItem[] = [];
+  if (activeWorkout) {
+    const { data } = await supabase
+      .from("workout_days")
+      .select("id, workout_id, label, order_index")
+      .eq("workout_id", activeWorkout.id)
+      .order("order_index", { ascending: true });
+    activeDays = (data ?? []) as DayItem[];
+  }
 
   const { count: sessionsCount } = await supabase
     .from("workout_logs")
@@ -52,41 +70,65 @@ export default async function UserHomePage() {
         <h1 className="font-display text-3xl font-semibold tracking-tight">Ciao, {firstName}</h1>
       </div>
 
-      {currentWorkout ? (
+      {activeWorkout ? (
         <GlassCard variant="brand">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="font-display text-xl font-semibold">{currentWorkout.title}</h2>
-              {currentWorkout.description && (
-                <p className="mt-1 text-sm text-white/70">{currentWorkout.description}</p>
+              <h2 className="font-display text-xl font-semibold">{activeWorkout.title}</h2>
+              {activeWorkout.description && (
+                <p className="mt-1 text-sm text-white/70">{activeWorkout.description}</p>
               )}
             </div>
             <ClipboardList className="h-5 w-5 shrink-0 text-white/80" />
           </div>
 
-          <div className="mt-4 pt-4 border-t border-white/10">
-            <p className="mb-3 text-xs font-medium uppercase tracking-wider text-white/60">
-              Giorni / sessioni
+          {activeDays.length > 0 ? (
+            <div className="mt-4 pt-4 border-t border-white/10">
+              <p className="mb-3 text-xs font-medium uppercase tracking-wider text-white/60">
+                Giorni / sessioni
+              </p>
+              <ul className="space-y-2">
+                {activeDays.map((day) => (
+                  <li key={day.id}>
+                    <Link
+                      href={`/user/workout/${day.id}`}
+                      className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 hover:border-white/20 hover:bg-white/10 transition-colors"
+                    >
+                      <span className="font-medium">{day.label}</span>
+                      <ChevronRight className="h-4 w-4 text-white/50" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="mt-4 pt-4 border-t border-white/10 text-sm text-white/60">
+              Il coach non ha ancora aggiunto giorni alla scheda.
             </p>
-            <ul className="space-y-2">
-              {(workoutDays ?? []).map((day) => (
-                <li key={day.id}>
-                  <Link
-                    href={`/user/workout/${day.id}`}
-                    className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 hover:border-white/20 hover:bg-white/10 transition-colors"
-                  >
-                    <span className="font-medium">{day.label}</span>
-                    <ChevronRight className="h-4 w-4 text-white/50" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
+          )}
+        </GlassCard>
+      ) : workouts.length > 0 ? (
+        <GlassCard>
+          <div className="flex items-center gap-2 text-amber-300 text-sm">
+            <Calendar className="h-4 w-4" />
+            <span>Nessuna scheda <strong>attiva</strong>. Il coach deve impostarne una.</span>
           </div>
+          <ul className="mt-3 space-y-2">
+            {otherWorkouts.map((w) => (
+              <li
+                key={w.id}
+                className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm"
+              >
+                <span className="font-medium">{w.title}</span>{" "}
+                <span className="text-xs text-white/50">(archiviata)</span>
+              </li>
+            ))}
+          </ul>
         </GlassCard>
       ) : (
         <GlassCard className="text-center py-10">
           <Calendar className="mx-auto h-8 w-8 text-white/40" />
-          <h2 className="mt-3 font-display text-lg font-semibold">Nessuna scheda attiva</h2>
+          <h2 className="mt-3 font-display text-lg font-semibold">Nessuna scheda</h2>
           <p className="mt-1 text-sm text-white/60">
             Il tuo coach non ti ha ancora assegnato una scheda.
           </p>
