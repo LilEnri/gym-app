@@ -19,6 +19,7 @@ type ExerciseLib = {
   name: string;
   muscle_group: string;
   equipment: string | null;
+  image_url: string | null;
 };
 
 type DayExercise = {
@@ -68,7 +69,7 @@ export default async function WorkoutDayPage({ params }: PageProps) {
   const { data: exData } = await supabase
     .from("workout_exercises")
     .select(
-      "id, workout_day_id, exercise_id, order_index, sets, target_reps, rest_seconds, notes, exercises:exercise_id(id, name, muscle_group, equipment)",
+      "id, workout_day_id, exercise_id, order_index, sets, target_reps, rest_seconds, notes, exercises:exercise_id(id, name, muscle_group, equipment, image_url)",
     )
     .eq("workout_day_id", dayId)
     .order("order_index", { ascending: true });
@@ -120,6 +121,7 @@ export default async function WorkoutDayPage({ params }: PageProps) {
               name: lib?.name ?? "Esercizio",
               equipment: lib?.equipment ?? null,
               muscleGroup: lib?.muscle_group ?? "",
+              imageUrl: lib?.image_url ?? null,
               sets: de.sets,
               targetReps: de.target_reps,
               restSeconds: de.rest_seconds,

@@ -13,6 +13,7 @@ interface ExerciseInfo {
   name: string;
   equipment: string | null;
   muscleGroup: string;
+  imageUrl: string | null;
   sets: number;
   targetReps: string;
   restSeconds: number | null;
@@ -96,22 +97,32 @@ function ExerciseBlock({ exercise }: { exercise: ExerciseInfo }) {
 
   return (
     <GlassCard variant="strong">
-      <div className="mb-3">
-        <h3 className="font-display font-semibold">{exercise.name}</h3>
-        <p className="mt-0.5 text-xs text-white/60">
-          {exercise.muscleGroup}
-          {exercise.equipment && ` · ${exercise.equipment}`} · target {exercise.sets} ×{" "}
-          {exercise.targetReps}
-          {exercise.restSeconds && (
-            <span className="inline-flex items-center gap-1 ml-2">
-              <Timer className="h-3 w-3" />
-              {exercise.restSeconds}s
-            </span>
+      <div className="mb-3 flex items-start gap-3">
+        {exercise.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={exercise.imageUrl}
+            alt={exercise.name}
+            className="h-16 w-16 rounded-lg object-cover bg-white/5 shrink-0"
+          />
+        ) : null}
+        <div className="flex-1 min-w-0">
+          <h3 className="font-display font-semibold">{exercise.name}</h3>
+          <p className="mt-0.5 text-xs text-white/60">
+            {exercise.muscleGroup}
+            {exercise.equipment && ` · ${exercise.equipment}`} · target {exercise.sets} ×{" "}
+            {exercise.targetReps}
+            {exercise.restSeconds && (
+              <span className="inline-flex items-center gap-1 ml-2">
+                <Timer className="h-3 w-3" />
+                {exercise.restSeconds}s
+              </span>
+            )}
+          </p>
+          {exercise.notes && (
+            <p className="mt-1 text-xs text-white/50 italic">{exercise.notes}</p>
           )}
-        </p>
-        {exercise.notes && (
-          <p className="mt-1 text-xs text-white/50 italic">{exercise.notes}</p>
-        )}
+        </div>
       </div>
 
       <div className="space-y-2">
