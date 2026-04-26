@@ -47,24 +47,16 @@ export default async function CoachAthletesPage() {
 
   const invites = (invitesData ?? []) as Invite[];
 
-  // Atleti attivi: profili con almeno una scheda dove coach_id = me
-  const { data: workoutsData } = await supabase
-    .from("workouts")
-    .select("user_id, profiles:user_id(id, full_name, avatar_url)")
-    .eq("coach_id", user.id);
+  // Allievi: profili che ho invitato (invited_by = me) — attivi e non
+  const { data: athletesData } = await supabase
+    .from("profiles")
+    .select("id, full_name, avatar_url")
+    .eq("invited_by", user.id)
+    .eq("role", "user")
+    .eq("is_active", true)
+    .order("full_name", { ascending: true });
 
-  const seen = new Set<string>();
-  const athletes: Athlete[] = [];
-  for (const row of (workoutsData ?? []) as Array<{
-    user_id: string;
-    profiles: Athlete | Athlete[] | null;
-  }>) {
-    const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
-    if (profile && !seen.has(profile.id)) {
-      seen.add(profile.id);
-      athletes.push(profile);
-    }
-  }
+  const athletes = (athletesData ?? []) as Athlete[];
 
   return (
     <div className="space-y-6">

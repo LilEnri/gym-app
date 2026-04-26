@@ -67,7 +67,8 @@ export async function createInviteAction(formData: FormData): Promise<ActionResu
 }
 
 // Usata direttamente in <form action={...}>: deve ritornare void.
-// Errori vengono ignorati silenziosamente (azione idempotente).
+// Usa admin client per bypassare RLS, ma controlla che l'invito sia
+// dell'utente loggato tramite .eq("invited_by", user.id).
 export async function revokeInviteAction(formData: FormData): Promise<void> {
   const inviteId = String(formData.get("inviteId") ?? "");
   if (!inviteId) return;
@@ -78,7 +79,8 @@ export async function revokeInviteAction(formData: FormData): Promise<void> {
   } = await supabase.auth.getUser();
   if (!user) return;
 
-  await supabase
+  const admin = createAdminClient();
+  await admin
     .from("invites")
     .update({ status: "revoked" })
     .eq("id", inviteId)
