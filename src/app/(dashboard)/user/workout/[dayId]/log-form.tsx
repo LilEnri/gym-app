@@ -5,6 +5,7 @@ import { Check, Loader2, Timer } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
+import { ExerciseThumb } from "@/components/exercise-thumb";
 import { saveSessionAction } from "./actions";
 
 interface ExerciseInfo {
@@ -98,14 +99,12 @@ function ExerciseBlock({ exercise }: { exercise: ExerciseInfo }) {
   return (
     <GlassCard variant="strong">
       <div className="mb-3 flex items-start gap-3">
-        {exercise.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={exercise.imageUrl}
-            alt={exercise.name}
-            className="h-16 w-16 rounded-lg object-cover bg-white/5 shrink-0"
-          />
-        ) : null}
+        <ExerciseThumb
+          url={exercise.imageUrl}
+          alt={exercise.name}
+          muscleGroup={exercise.muscleGroup}
+          size="lg"
+        />
         <div className="flex-1 min-w-0">
           <h3 className="font-display font-semibold">{exercise.name}</h3>
           <p className="mt-0.5 text-xs text-white/60">

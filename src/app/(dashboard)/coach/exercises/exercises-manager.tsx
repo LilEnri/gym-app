@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { ImageOff, Plus, Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { ExerciseThumb } from "@/components/exercise-thumb";
 import { createExerciseAction, updateExerciseAction } from "./actions";
 
 type Exercise = {
@@ -118,7 +119,7 @@ function ExerciseRow({
   return (
     <GlassCard className="!p-3">
       <div className="flex items-center gap-3">
-        <ExerciseThumb url={exercise.image_url} alt={exercise.name} />
+        <ExerciseThumb url={exercise.image_url} alt={exercise.name} muscleGroup={exercise.muscle_group} size="md" />
         <div className="flex-1 min-w-0">
           <p className="font-medium truncate">{exercise.name}</p>
           <p className="text-xs text-white/50 mt-0.5">
@@ -180,25 +181,6 @@ function ExerciseRow({
         </form>
       )}
     </GlassCard>
-  );
-}
-
-function ExerciseThumb({ url, alt }: { url: string | null; alt: string }) {
-  if (!url) {
-    return (
-      <div className="h-12 w-12 rounded-lg bg-white/5 grid place-items-center text-white/30 shrink-0">
-        <ImageOff className="h-4 w-4" />
-      </div>
-    );
-  }
-  // Usiamo <img> normale: l'utente puo incollare URL da qualsiasi host
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={url}
-      alt={alt}
-      className="h-12 w-12 rounded-lg object-cover bg-white/5 shrink-0"
-    />
   );
 }
 
